@@ -1,0 +1,37 @@
+name: Build QEMU for macOS (M1/M2)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-12  # macOS 12 (Monterey) with M1/M2
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install pkg-config glib pixman ninja
+
+      - name: Configure QEMU
+        run: |
+          ./configure \
+            --target-list=x86_64-softmmu,x86_64-linux-user,arm-softmmu,arm-linux-user,aarch64-softmmu,aarch64-linux-user \
+            --enable-hvf \
+            --enable-cocoa \
+            --disable-werror
+
+      - name: Build QEMU
+        run: |
+          make -j$(sysctl -n hw.logicalcpu)
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: qemu-binaries
+          path: |
+            */qemu-system-*
+            */qemu-*
